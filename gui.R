@@ -34,73 +34,89 @@ env <- new.env()
 
 ## Variable types
 env$types <- c("integer", "character", "factor")
+env$act_types <- c("incurred", "paid", "number","origin", "development", "class")
 
 ## Variable names and selected types
 env$z_names <- list()
 env$z_types <- list()
-
+env$z_act_types <- list()
 
 ## Set up the GUI window ----
 env$win <- gwindow("Load Data", visible=TRUE, height=400, width=800)
 
-# The main window group ----
+## The main window group ----
 env$group <- ggroup(horizontal = FALSE, container=env$win)
 
 ## Button for file chooser dialog ----
 env$file_button <- gbutton("Select File", handler = function(h, ...)
-                             {
-                               #Retrieve the selected file and store the details
-                               env$data_filepath <- env$fileChoose(text="Select a file...")
-                               env$selectData(x=env$data_filepath)
-                               
-                             }, container=env$group
-)
+    {
+        ##Retrieve the selected file and store the details
+        env$data_filepath <- env$fileChoose(text="Select a file...")
+        env$selectData(x=env$data_filepath)
+        
+    }, container=env$group
+                           )
 
 ## Add file path and some commentary to the dialog ----
 env$path <- gedit("No File Selected", container=env$group, width=50)
 
-## Frame to store the variable names and types, add a group for the variable names and types ----
-env$data <- gframe("Chosse data to import and format", container=env$win, horizontal=T)
-
-## Names will be checkboxes initiall so that you can select which fields to keep
-## types will be radio boxes so that you can specify the type for import
-env$variables_names_list <- ggroup(container=env$data, horizontal=F)
-env$variables_types_list <- ggroup(container=env$data, horizontal=F)
 
 ## Create a customised file chooser dialog ----
 env$fileChoose <- function( text = "Select a file...",
-                            type="open", ...) {
-  gfile(text=text, type=type, ...)
+                           type="open", ...) {
+    gfile(text=text, type=type, ...)
 }
 
 
 ## Probe and specify the data to import..... ----
 env$selectData <- function(x,...) {
-  ## Get head of file to return variable names and guess the types
-  data.head <- read.csv(x, header=T, nrows=10)
-  data.names <- colnames(data.head)
-  data.types <- sapply(data.head, class)
-  ## Loop through the variables and return checkboxes and radio boxes for the user to inspect
-  for(i in 1:length(data.names)){
-    env$z_names[i] <- gcheckbox(text=data.names[i],container=env$variables_names_list)
-    env$z_types[i] <- gradio(items=env$types,container=env$variables_types_list, horizontal=T, selected=match(data.types[i],env$types))
-  }
-  
-  # Button to start the import ----
-  env$file_button2 <- gbutton("Import Data", handler = 
-                                function(h, ...) {
-                                  col.names.logical <- sapply(env$z_names, svalue)
-                                  col.classes <- sapply(env$z_types, svalue)[col.names.logical]
-                                  env$raw.data <- read.csv(file=env$data_filepath, colClasses=col.classes)
-                                  env$raw.data <- env$raw.data[,col.names.logical]
-                                  assign("raw.data", env$raw.data, envir=.GlobalEnv)
-                                  print(nrow(env$raw.data))
-                                  print(" rows imported")
-                                  print("Data saved to env$raw.data....")
-                                  dispose(h$obj)
-                                }, container=env$group
-  )
-  
-  
+    ## Get head of file to return variable names and guess the types
+    data.head <- read.csv(x, header=T, nrows=10)
+    svalue(env$path) <- x
+    data.names <- colnames(data.head)
+    data.types <- sapply(data.head, class)
+    ## Frame to store the variable names and types,
+    ## add groups for the variable names and types and only make this visible after a
+    ## file has been selected
+    env$data <- gframe("Chosse data to import and format", container=env$win, horizontal=T)
+    env$var_name <- gframe("Variable", container=env$data)
+    env$var_type <- gframe("Data Type", container=env$data)
+    env$var_act_type <- gframe("Actuarial Type", container=env$data)
+
+    ## Names will be checkboxes initially so that you can select which fields to keep
+
+    ## types will be radio boxes so that you can specify the type for import
+    env$variables_names_list <- ggroup(container=env$var_name, horizontal=F)
+    env$variables_data_type_list <- ggroup(container=env$var_type, horizontal=F)
+
+
+    ## To do.......
+    ## Make this more automated, for dates have only date options, amounts only amounts etc...
+    env$variables_actuarial_data_type <- ggroup(container=env$var_act_type, horizontal=F)
+
+    
+    ## Loop through the variables and return checkboxes and radio boxes for the user to inspect
+    for(i in 1:length(data.names)){
+        env$z_names[i] <- gcheckbox(text=data.names[i],container=env$variables_names_list)
+        env$z_types[i] <- gradio(items=env$types,container=env$variables_data_type_list, horizontal=T, selected=match(data.types[i],env$types))
+        env$z_act_types[i] <- gradio(items=env$act_types,container=env$variables_actuarial_data_type, horizontal=T, selected=0)
+    }
+    
+    ## Button to start the import ----
+    env$file_button2 <- gbutton("Import Data", handler = 
+                                    function(h, ...) {
+                                        col.names.logical <- sapply(env$z_names, svalue)
+                                        col.classes <- sapply(env$z_types, svalue)[col.names.logical]
+                                        env$raw.data <- read.csv(file=env$data_filepath, colClasses=col.classes)
+                                        env$raw.data <- env$raw.data[,col.names.logical]
+                                        assign("raw.data", env$raw.data, envir=.GlobalEnv)
+                                        print(nrow(env$raw.data))
+                                        print(" rows imported")
+                                        print("Data saved to env$raw.data....")
+                                        dispose(h$obj)
+                                    }, container=env$group
+                                )
+    
+    
 }
 
