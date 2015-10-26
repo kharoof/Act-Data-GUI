@@ -93,6 +93,7 @@ env$selectData <- function(x,...) {
                                   col.classes <- sapply(env$z_types, svalue)[col.names.logical]
                                   env$raw.data <- read.csv(file=env$data_filepath, colClasses=col.classes)
                                   env$raw.data <- env$raw.data[,col.names.logical]
+                                  assign("raw.data", env$raw.data, envir=.GlobalEnv)
                                   print(nrow(env$raw.data))
                                   print(" rows imported")
                                   print("Data saved to env$raw.data....")
